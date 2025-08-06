@@ -1,9 +1,28 @@
-import { useCallback } from 'react'
+import { useCallback, useState, useEffect } from 'react'
 import { Range } from 'react-range'
 import { format, addHours, differenceInHours } from 'date-fns'
+import {
+  Box,
+  Typography,
+  Button,
+  Stack,
+  Paper,
+  Tooltip,
+  useMediaQuery,
+  useTheme
+} from '@mui/material'
+import {
+  Schedule,
+  NavigateBefore,
+  NavigateNext,
+  AccessTime
+} from '@mui/icons-material'
 
 const TimelineSlider = ({ timelineRange, onChange }) => {
   const { start, end, current } = timelineRange
+  const theme = useTheme()
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'))
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'))
   
   // Convert dates to hours for the slider
   const totalHours = differenceInHours(end, start)
@@ -36,17 +55,43 @@ const TimelineSlider = ({ timelineRange, onChange }) => {
     }
   }
   
-  // Generate tick marks for display
+  // Generate tick marks for display - responsive
   const generateTicks = () => {
     const ticks = []
-    const tickInterval = Math.max(1, Math.floor(totalHours / 10)) // Show ~10 ticks
+    let maxTicks
+    
+    // Adjust number of ticks based on screen size
+    if (isMobile) {
+      maxTicks = 3
+    } else if (isTablet) {
+      maxTicks = 5
+    } else {
+      maxTicks = 8
+    }
+    
+    const tickInterval = Math.max(1, Math.floor(totalHours / (maxTicks - 1)))
     
     for (let i = 0; i <= totalHours; i += tickInterval) {
+      if (ticks.length >= maxTicks) break
+      
       const tickDate = addHours(start, i)
       ticks.push({
         value: i,
-        label: format(tickDate, 'MMM dd HH:mm')
+        label: isMobile ? 
+          format(tickDate, 'MM/dd HH:mm') : 
+          format(tickDate, 'MMM dd HH:mm')
       })
+    }
+    
+    // Always include the last tick if not already there
+    if (ticks.length > 0 && ticks[ticks.length - 1].value !== totalHours) {
+      const lastTickDate = addHours(start, totalHours)
+      ticks[ticks.length - 1] = {
+        value: totalHours,
+        label: isMobile ? 
+          format(lastTickDate, 'MM/dd HH:mm') : 
+          format(lastTickDate, 'MMM dd HH:mm')
+      }
     }
     
     return ticks
@@ -55,122 +100,230 @@ const TimelineSlider = ({ timelineRange, onChange }) => {
   const ticks = generateTicks()
   
   return (
-    <div className="w-full">
-      <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Timeline Control</h3>
-        <div className="flex items-center space-x-2">
-          <button
-            onClick={() => handleQuickNav('prev')}
-            disabled={current <= start}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 hover:bg-blue-600"
-          >
-            ← Prev Hour
-          </button>
-          <span className="text-sm font-medium text-gray-700 min-w-[140px] text-center">
-            {format(current, 'MMM dd, yyyy HH:mm')}
-          </span>
-          <button
-            onClick={() => handleQuickNav('next')}
-            disabled={current >= end}
-            className="px-3 py-1 text-sm bg-blue-500 text-white rounded disabled:bg-gray-300 hover:bg-blue-600"
-          >
-            Next Hour →
-          </button>
-        </div>
-      </div>
-      
-      <div className="relative">
-        {/* Timeline Range Display */}
-        <div className="flex justify-between text-xs text-gray-500 mb-2">
-          <span>{format(start, 'MMM dd, yyyy')}</span>
-          <span className="font-medium text-gray-700">
-            30-day window ({Math.round(totalHours / 24)} days)
-          </span>
-          <span>{format(end, 'MMM dd, yyyy')}</span>
-        </div>
-        
-        {/* Range Slider */}
-        <div className="px-4 py-2">
-          <Range
-            step={1}
-            min={0}
-            max={totalHours}
-            values={[currentHour]}
-            onChange={handleSliderChange}
-            renderTrack={({ props, children }) => (
-              <div
-                onMouseDown={props.onMouseDown}
-                onTouchStart={props.onTouchStart}
-                style={{
-                  ...props.style,
-                  height: '8px',
-                  display: 'flex',
-                  width: '100%'
-                }}
-              >
-                <div
-                  ref={props.ref}
-                  style={{
-                    height: '8px',
-                    width: '100%',
-                    borderRadius: '4px',
-                    background: '#e5e7eb',
-                    alignSelf: 'center'
-                  }}
-                >
-                  {children}
-                </div>
-              </div>
-            )}
-            renderThumb={({ props, isDragged }) => (
-              <div
-                {...props}
-                style={{
-                  ...props.style,
-                  height: '20px',
-                  width: '20px',
-                  borderRadius: '50%',
-                  backgroundColor: '#3b82f6',
-                  border: '2px solid #ffffff',
-                  boxShadow: '0 2px 6px rgba(0, 0, 0, 0.2)',
-                  display: 'flex',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  outline: 'none'
-                }}
-                className={isDragged ? 'scale-110' : ''}
-              >
-                <div className="w-2 h-2 bg-white rounded-full" />
-              </div>
-            )}
-          />
-        </div>
-        
-        {/* Tick Marks */}
-        <div className="relative mt-2">
-          {ticks.map((tick, index) => (
-            <div
-              key={index}
-              className="absolute text-xs text-gray-400 transform -translate-x-1/2"
-              style={{ left: `${(tick.value / totalHours) * 100}%` }}
+    <Box sx={{ width: '100%', p: { xs: 1, sm: 1.5, md: 2 } }}>
+      {/* Responsive Header Section */}
+      <Stack 
+        direction={{ xs: 'column', sm: 'row' }} 
+        justifyContent="space-between" 
+        alignItems={{ xs: 'stretch', sm: 'center' }} 
+        spacing={{ xs: 1, sm: 2 }}
+        sx={{ mb: { xs: 1, sm: 2 } }}
+      >
+        {/* Time Range Info */}
+        <Stack direction="row" alignItems="center" spacing={1}>
+          <Schedule sx={{ 
+            color: '#1976d2', 
+            fontSize: { xs: 16, sm: 18, md: 20 } 
+          }} />
+          <Box>
+            <Typography 
+              variant="body1" 
+              sx={{ 
+                fontWeight: 600, 
+                color: '#1976d2',
+                fontSize: { xs: '0.8rem', sm: '0.9rem', md: '1rem' }
+              }}
             >
-              <div className="h-2 w-px bg-gray-300 mx-auto mb-1" />
-              <span className="whitespace-nowrap">{tick.label}</span>
-            </div>
-          ))}
-        </div>
-      </div>
+              Time Range
+            </Typography>
+            <Typography 
+              variant="caption" 
+              color="text.secondary"
+              sx={{ fontSize: { xs: '0.7rem', sm: '0.75rem' } }}
+            >
+              {format(start, isMobile ? 'MM/dd' : 'MMM dd')} - {format(end, isMobile ? 'MM/dd' : 'MMM dd')}
+            </Typography>
+          </Box>
+        </Stack>
+        
+        {/* Current Time Display */}
+        <Tooltip title="Current selected time">
+          <Paper sx={{ 
+            py: { xs: 0.5, sm: 0.7 }, 
+            px: { xs: 1, sm: 1.5, md: 2 }, 
+            bgcolor: '#e3f2fd',
+            border: '1px solid #bbdefb',
+            display: 'flex',
+            alignItems: 'center',
+            gap: { xs: 0.5, sm: 1 },
+            justifyContent: 'center',
+            minWidth: { xs: 'auto', sm: '140px' }
+          }}>
+            <AccessTime sx={{ 
+              color: '#1976d2', 
+              fontSize: { xs: 14, sm: 16 } 
+            }} />
+            <Typography variant="body2" sx={{ 
+              fontWeight: 600, 
+              color: '#1565c0',
+              fontSize: { xs: '0.75rem', sm: '0.875rem' },
+              whiteSpace: 'nowrap'
+            }}>
+              {format(current, isMobile ? 'MM/dd HH:mm' : 'MMM dd, HH:mm')}
+            </Typography>
+          </Paper>
+        </Tooltip>
+      </Stack>
       
-      {/* Current Selection Info */}
-      <div className="mt-6 p-3 bg-blue-50 rounded-lg">
-        <div className="text-sm text-blue-800">
-          <strong>Selected Time:</strong> {format(current, 'EEEE, MMMM dd, yyyy \'at\' HH:mm')}
-        </div>
-        <div className="text-xs text-blue-600 mt-1">
-          Use the slider or arrow buttons to navigate through the timeline
-        </div>
-      </div>
-    </div>
+      {/* Navigation Controls */}
+      <Stack 
+        direction="row" 
+        spacing={{ xs: 1, sm: 2 }}
+        sx={{ mb: { xs: 1.5, sm: 2 } }}
+      >
+        <Button
+          variant="outlined"
+          startIcon={!isMobile && <NavigateBefore />}
+          onClick={() => handleQuickNav('prev')}
+          disabled={current <= start}
+          size={isMobile ? "small" : "medium"}
+          fullWidth
+          sx={{
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            py: { xs: 0.5, sm: 1 }
+          }}
+        >
+          {isMobile ? '← Prev' : 'Previous Hour'}
+        </Button>
+        
+        <Button
+          variant="outlined"
+          endIcon={!isMobile && <NavigateNext />}
+          onClick={() => handleQuickNav('next')}
+          disabled={current >= end}
+          size={isMobile ? "small" : "medium"}
+          fullWidth
+          sx={{
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            py: { xs: 0.5, sm: 1 }
+          }}
+        >
+          {isMobile ? 'Next →' : 'Next Hour'}
+        </Button>
+      </Stack>
+      
+      {/* Responsive Timeline Slider */}
+      <Box sx={{ 
+        px: { xs: 1, sm: 2, md: 3 }, 
+        py: { xs: 2, sm: 3 },
+        border: '1px solid #e0e0e0',
+        borderRadius: { xs: 1, sm: 2 },
+        bgcolor: '#fafafa',
+        mb: { xs: 1, sm: 2 }
+      }}>
+        <Range
+          step={1}
+          min={0}
+          max={totalHours}
+          values={[currentHour]}
+          onChange={handleSliderChange}
+          renderTrack={({ props, children }) => (
+            <div
+              onMouseDown={props.onMouseDown}
+              onTouchStart={props.onTouchStart}
+              style={{
+                ...props.style,
+                height: isMobile ? '32px' : '40px',
+                display: 'flex',
+                width: '100%'
+              }}
+            >
+              <div
+                ref={props.ref}
+                style={{
+                  height: isMobile ? '6px' : '8px',
+                  width: '100%',
+                  borderRadius: isMobile ? '3px' : '4px',
+                  background: 'linear-gradient(90deg, #bbdefb 0%, #64b5f6 50%, #1976d2 100%)',
+                  alignSelf: 'center',
+                  position: 'relative',
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.2)'
+                }}
+              >
+                {children}
+              </div>
+            </div>
+          )}
+          renderThumb={({ props, isDragged }) => (
+            <div
+              {...props}
+              style={{
+                ...props.style,
+                height: isMobile ? '24px' : '28px',
+                width: isMobile ? '24px' : '28px',
+                borderRadius: '50%',
+                backgroundColor: '#1976d2',
+                border: `${isMobile ? '2px' : '3px'} solid white`,
+                boxShadow: isDragged ? 
+                  '0 4px 12px rgba(25, 118, 210, 0.4)' : 
+                  '0 2px 8px rgba(0,0,0,0.2)',
+                outline: 'none',
+                cursor: 'grab',
+                transform: isDragged ? 'scale(1.1)' : 'scale(1)',
+                transition: 'all 0.2s ease'
+              }}
+            />
+          )}
+        />
+        
+        {/* Responsive tick marks */}
+        <Box sx={{ 
+          mt: { xs: 1, sm: 1.5 }, 
+          display: 'flex', 
+          justifyContent: 'space-between',
+          px: { xs: 0.5, sm: 1 }
+        }}>
+          {ticks.map((tick, index) => (
+            <Typography 
+              key={index} 
+              variant="caption" 
+              sx={{ 
+                color: Math.abs(tick.value - currentHour) <= 1 ? '#1565c0' : 'text.secondary',
+                fontWeight: Math.abs(tick.value - currentHour) <= 1 ? 600 : 400,
+                fontSize: { xs: '0.6rem', sm: '0.7rem', md: '0.75rem' },
+                textAlign: 'center',
+                maxWidth: { xs: '60px', sm: '80px', md: '100px' },
+                overflow: 'hidden',
+                textOverflow: 'ellipsis',
+                whiteSpace: 'nowrap',
+                transform: { xs: 'rotate(-15deg)', sm: 'rotate(0deg)' },
+                transformOrigin: 'center'
+              }}
+            >
+              {tick.label}
+            </Typography>
+          ))}
+        </Box>
+      </Box>
+      
+      {/* Responsive Time Information */}
+      <Box sx={{ 
+        bgcolor: '#e3f2fd', 
+        p: { xs: 1, sm: 1.5 }, 
+        borderRadius: { xs: 1, sm: 2 },
+        border: '1px solid #bbdefb',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        flexDirection: { xs: 'column', sm: 'row' },
+        gap: { xs: 0.5, sm: 1 }
+      }}>
+        <Typography 
+          variant="body2" 
+          sx={{
+            color: '#1565c0',
+            fontWeight: 500,
+            fontSize: { xs: '0.75rem', sm: '0.875rem' },
+            textAlign: 'center'
+          }}
+        >
+          <strong>{format(current, isMobile ? 'MM/dd/yyyy' : 'MMMM dd, yyyy')}</strong>
+          {!isMobile && ' at '}
+          {isMobile && <br />}
+          <strong>{format(current, 'HH:mm')} UTC</strong>
+        </Typography>
+      </Box>
+    </Box>
   )
 }
 
