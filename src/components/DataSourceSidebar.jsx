@@ -255,12 +255,11 @@ const DataSourceSidebar = ({
               <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
                 {/* Responsive Data Source Header */}
                 <Stack 
-                  direction={{ xs: 'column', sm: 'row' }} 
-                  alignItems="flex-start" 
-                  justifyContent="space-between" 
+                  direction="column"
+                  spacing={2}
                   sx={{ mb: { xs: 2, sm: 3 } }}
                 >
-                  <Stack direction="row" alignItems="center" spacing={2} sx={{ mb: { xs: 1, sm: 0 } }}>
+                  <Stack direction="row" alignItems="center" spacing={2}>
                     <Box
                       sx={{
                         width: { xs: 12, sm: 16 },
@@ -271,7 +270,7 @@ const DataSourceSidebar = ({
                         boxShadow: 2
                       }}
                     />
-                    <Box>
+                    <Box sx={{ flexGrow: 1 }}>
                       <Typography 
                         variant="h6" 
                         fontWeight="bold" 
@@ -288,25 +287,41 @@ const DataSourceSidebar = ({
                         {dataSource.field}
                       </Typography>
                     </Box>
-                  </Stack>
-                  
-                  <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap', gap: 1 }}>
                     {selectedDataSource === dataSource.id && (
                       <Chip 
                         icon={<CheckCircle />}
                         label="Active" 
                         color="primary" 
-                        size={isMobile ? "small" : "medium"} 
+                        size="small"
                         variant="filled"
+                        sx={{
+                          height: { xs: 20, sm: 24 },
+                          fontSize: { xs: '0.6rem', sm: '0.7rem' },
+                          '& .MuiChip-icon': {
+                            fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                          }
+                        }}
                       />
                     )}
+                  </Stack>
+                  
+                  <Stack 
+                    direction="row" 
+                    spacing={1} 
+                    sx={{ 
+                      justifyContent: 'stretch',
+                      width: '100%'
+                    }}
+                  >
                     <Button
                       variant={selectedDataSource === dataSource.id ? "contained" : "outlined"}
-                      size={isMobile ? "small" : "medium"}
+                      size="small"
                       onClick={() => onSelectedDataSourceChange(dataSource.id)}
                       sx={{ 
-                        minWidth: { xs: 60, sm: 80 },
-                        fontSize: { xs: '0.75rem', sm: '0.875rem' },
+                        flexGrow: 1,
+                        fontSize: { xs: '0.7rem', sm: '0.8rem' },
+                        py: { xs: 0.5, sm: 0.75 },
+                        minHeight: { xs: 28, sm: 32 }
                       }}
                     >
                       {selectedDataSource === dataSource.id ? 'Selected' : 'Select'}
@@ -314,11 +329,16 @@ const DataSourceSidebar = ({
                     {dataSources.length > 1 && (
                       <Tooltip title="Delete data source">
                         <IconButton
-                          size={isMobile ? "small" : "medium"}
+                          size="small"
                           color="error"
                           onClick={() => handleDataSourceDelete(dataSource.id)}
+                          sx={{
+                            minWidth: 32,
+                            width: 32,
+                            height: 32
+                          }}
                         >
-                          <Delete />
+                          <Delete sx={{ fontSize: { xs: 16, sm: 18 } }} />
                         </IconButton>
                       </Tooltip>
                     )}
@@ -392,25 +412,43 @@ const DataSourceSidebar = ({
                   </Stack>
                 </Box>
                 
-                {/* Range Filter */}
-                <Paper variant="outlined" sx={{ p: 3, bgcolor: '#f8fafc', borderRadius: 2 }}>
-                  <Typography variant="subtitle2" gutterBottom fontWeight="bold" color="text.primary">
-                    <Settings sx={{ fontSize: 16, mr: 1 }} />
+                {/* Responsive Range Filter */}
+                <Paper 
+                  variant="outlined" 
+                  sx={{ 
+                    p: { xs: 2, sm: 3 }, 
+                    bgcolor: '#f8fafc', 
+                    borderRadius: 2 
+                  }}
+                >
+                  <Typography 
+                    variant="subtitle2" 
+                    gutterBottom 
+                    fontWeight="bold" 
+                    color="text.primary"
+                    sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                  >
+                    <Settings sx={{ fontSize: { xs: 14, sm: 16 }, mr: 1 }} />
                     Value Range Filter
                   </Typography>
                   
                   <Grid container spacing={2} sx={{ mb: 2 }}>
                     <Grid item xs={6}>
-                      <FormControl fullWidth size="small">
-                        <InputLabel>Operator</InputLabel>
+                      <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                        <InputLabel sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                          Operator
+                        </InputLabel>
                         <Select
                           value={dataSource.operator}
                           label="Operator"
                           onChange={(e) => handleDataSourceUpdate(dataSource.id, 'operator', e.target.value)}
+                          sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                         >
                           {operators.map(op => (
                             <MenuItem key={op.value} value={op.value}>
-                              {op.label}
+                              <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                                {op.label}
+                              </Typography>
                             </MenuItem>
                           ))}
                         </Select>
@@ -419,12 +457,20 @@ const DataSourceSidebar = ({
                     <Grid item xs={6}>
                       <TextField
                         fullWidth
-                        size="small"
+                        size={isMobile ? "small" : "medium"}
                         type="number"
                         label="Value"
                         value={dataSource.value}
                         onChange={(e) => handleDataSourceUpdate(dataSource.id, 'value', parseFloat(e.target.value))}
                         inputProps={{ step: 0.1 }}
+                        sx={{
+                          '& .MuiInputLabel-root': {
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                          },
+                          '& .MuiInputBase-input': {
+                            fontSize: { xs: '0.875rem', sm: '1rem' }
+                          }
+                        }}
                       />
                     </Grid>
                   </Grid>
@@ -468,7 +514,7 @@ const DataSourceSidebar = ({
             </Card>
           ))}
           
-          {/* Add New Data Source */}
+          {/* Responsive Add New Data Source */}
           {!showAddForm ? (
             <Card 
               sx={{ 
@@ -483,14 +529,30 @@ const DataSourceSidebar = ({
               }}
               onClick={() => setShowAddForm(true)}
             >
-              <CardContent sx={{ textAlign: 'center', py: 4 }}>
-                <Avatar sx={{ bgcolor: '#3b82f6', mx: 'auto', mb: 2 }}>
-                  <Add />
+              <CardContent sx={{ textAlign: 'center', py: { xs: 3, sm: 4 } }}>
+                <Avatar sx={{ 
+                  bgcolor: '#3b82f6', 
+                  mx: 'auto', 
+                  mb: 2,
+                  width: { xs: 40, sm: 48 },
+                  height: { xs: 40, sm: 48 }
+                }}>
+                  <Add sx={{ fontSize: { xs: 20, sm: 24 } }} />
                 </Avatar>
-                <Typography variant="h6" fontWeight="bold" color="text.primary" gutterBottom>
+                <Typography 
+                  variant="h6" 
+                  fontWeight="bold" 
+                  color="text.primary" 
+                  gutterBottom
+                  sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                >
                   Add New Filter
                 </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography 
+                  variant="body2" 
+                  color="text.secondary"
+                  sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}
+                >
                   Create a new data visualization rule
                 </Typography>
               </CardContent>
@@ -499,21 +561,29 @@ const DataSourceSidebar = ({
             <Card elevation={4} sx={{ border: '2px solid #3b82f6', borderRadius: 3 }}>
               <Box sx={{ 
                 background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%)',
-                p: 2,
+                p: { xs: 1.5, sm: 2 },
                 color: 'white'
               }}>
                 <Stack direction="row" alignItems="center" spacing={2}>
-                  <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)' }}>
-                    <Add />
+                  <Avatar sx={{ 
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                    width: { xs: 32, sm: 40 },
+                    height: { xs: 32, sm: 40 }
+                  }}>
+                    <Add sx={{ fontSize: { xs: 16, sm: 20 } }} />
                   </Avatar>
-                  <Typography variant="h6" fontWeight="bold">
+                  <Typography 
+                    variant="h6" 
+                    fontWeight="bold"
+                    sx={{ fontSize: { xs: '1rem', sm: '1.25rem' } }}
+                  >
                     New Data Filter
                   </Typography>
                 </Stack>
               </Box>
               
-              <CardContent sx={{ p: 3 }}>
-                <Stack spacing={3}>
+              <CardContent sx={{ p: { xs: 2, sm: 3 } }}>
+                <Stack spacing={{ xs: 2, sm: 3 }}>
                   <TextField
                     fullWidth
                     label="Filter Name"
@@ -521,35 +591,60 @@ const DataSourceSidebar = ({
                     onChange={(e) => setNewDataSource({...newDataSource, name: e.target.value})}
                     placeholder="e.g., Cold Regions"
                     variant="outlined"
+                    size={isMobile ? "small" : "medium"}
+                    sx={{
+                      '& .MuiInputLabel-root': {
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      },
+                      '& .MuiInputBase-input': {
+                        fontSize: { xs: '0.875rem', sm: '1rem' }
+                      }
+                    }}
                   />
                   
-                  <FormControl fullWidth>
-                    <InputLabel>Data Field</InputLabel>
+                  <FormControl fullWidth size={isMobile ? "small" : "medium"}>
+                    <InputLabel sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                      Data Field
+                    </InputLabel>
                     <Select
                       value={newDataSource.field}
                       label="Data Field"
                       onChange={(e) => setNewDataSource({...newDataSource, field: e.target.value})}
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                     >
                       {availableFields.map(field => (
                         <MenuItem key={field.value} value={field.value}>
-                          {field.label}
+                          <Typography sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}>
+                            {field.label}
+                          </Typography>
                         </MenuItem>
                       ))}
                     </Select>
                   </FormControl>
                   
                   <Box>
-                    <Typography variant="subtitle2" gutterBottom fontWeight="bold">
+                    <Typography 
+                      variant="subtitle2" 
+                      gutterBottom 
+                      fontWeight="bold"
+                      sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
+                    >
                       Color Selection
                     </Typography>
-                    <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+                    <Stack 
+                      direction="row" 
+                      spacing={{ xs: 0.5, sm: 1 }} 
+                      flexWrap="wrap" 
+                      useFlexGap
+                      sx={{ gap: { xs: 0.5, sm: 1 } }}
+                    >
                       {colorOptions.map(color => (
                         <Box
                           key={color}
                           onClick={() => setNewDataSource({...newDataSource, color})}
                           sx={{
-                            width: 32,
-                            height: 32,
+                            width: { xs: 24, sm: 32 },
+                            height: { xs: 24, sm: 32 },
                             borderRadius: 2,
                             bgcolor: color,
                             border: newDataSource.color === color ? '3px solid #1f2937' : '2px solid #e5e7eb',
@@ -592,13 +687,21 @@ const DataSourceSidebar = ({
                   </Grid>
                 </Stack>
                 
-                <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+                <Stack 
+                  direction={{ xs: 'column', sm: 'row' }} 
+                  spacing={2} 
+                  sx={{ mt: { xs: 2, sm: 3 } }}
+                >
                   <Button
                     variant="contained"
                     fullWidth
                     onClick={handleAddDataSource}
                     startIcon={<CheckCircle />}
-                    sx={{ py: 1.5 }}
+                    size={isMobile ? "small" : "medium"}
+                    sx={{ 
+                      py: { xs: 1, sm: 1.5 },
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                    }}
                   >
                     Add Filter
                   </Button>
@@ -607,7 +710,11 @@ const DataSourceSidebar = ({
                     fullWidth
                     onClick={() => setShowAddForm(false)}
                     startIcon={<Cancel />}
-                    sx={{ py: 1.5 }}
+                    size={isMobile ? "small" : "medium"}
+                    sx={{ 
+                      py: { xs: 1, sm: 1.5 },
+                      fontSize: { xs: '0.75rem', sm: '0.875rem' }
+                    }}
                   >
                     Cancel
                   </Button>
