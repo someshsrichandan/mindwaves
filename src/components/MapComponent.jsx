@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react'
-import { MapContainer, TileLayer, Polygon, useMapEvents, useMap } from 'react-leaflet'
+import { MapContainer, TileLayer, Polygon, Popup, useMapEvents, useMap } from 'react-leaflet'
 import 'leaflet/dist/leaflet.css'
 import L from 'leaflet'
 import {
@@ -194,7 +194,7 @@ const MapController = () => {
   return null
 }
 
-const MapComponent = ({ polygons, isDrawing, onPolygonCreated, onPolygonDelete }) => {
+const MapComponent = ({ polygons, isDrawing, isLoading, onPolygonCreated, onPolygonDelete, getWeatherDescription }) => {
   const mapRef = useRef()
   const [currentPolygon, setCurrentPolygon] = useState([])
   const [isDrawingActive, setIsDrawingActive] = useState(false)
@@ -263,7 +263,7 @@ const MapComponent = ({ polygons, isDrawing, onPolygonCreated, onPolygonDelete }
           setIsDrawingActive={setIsDrawingActive}
         />
         
-        {/* Render existing polygons */}
+        {/* Render existing polygons with enhanced data popups */}
         {polygons.map((polygon) => {
           // Convert from GeoJSON to Leaflet format
           const leafletCoords = polygon.coordinates[0].map(coord => [coord[1], coord[0]])
@@ -275,27 +275,250 @@ const MapComponent = ({ polygons, isDrawing, onPolygonCreated, onPolygonDelete }
               pathOptions={{
                 color: polygon.color,
                 fillColor: polygon.color,
-                fillOpacity: 0.7,
+                fillOpacity: isLoading ? 0.4 : 0.7,
                 weight: 3,
-                opacity: 0.9
+                opacity: isLoading ? 0.6 : 0.9,
+                dashArray: isLoading ? '5, 5' : null
               }}
               eventHandlers={{
                 click: () => handlePolygonClick(polygon),
                 mouseover: (e) => {
                   e.target.setStyle({
                     weight: 4,
-                    fillOpacity: 0.8
+                    fillOpacity: isLoading ? 0.5 : 0.8
                   })
                 },
                 mouseout: (e) => {
                   e.target.setStyle({
                     weight: 3,
-                    fillOpacity: 0.7
+                    fillOpacity: isLoading ? 0.4 : 0.7
                   })
                 }
               }}
             >
-              {/* You could add a popup here showing polygon data */}
+              <Popup maxWidth={350} minWidth={250}>
+                <Box sx={{ p: 1, minWidth: 200 }}>
+                  <Stack direction="row" alignItems="center" spacing={1} sx={{ mb: 1.5 }}>
+                    <LocationOn sx={{ color: polygon.color, fontSize: 18 }} />
+                    <Typography variant="h6" fontWeight="bold" sx={{ color: '#1565c0' }}>
+                      Weather Data
+                    </Typography>
+                    <Chip 
+                      label={`ID: ${polygon.id}`} 
+                      size="small" 
+                      sx={{ 
+                        bgcolor: '#e3f2fd',
+                        color: '#1565c0',
+                        fontSize: '0.7rem'
+                      }} 
+                    />
+                  </Stack>
+
+                  {polygon.data ? (
+                    polygon.data.error ? (
+                      <Alert severity="error" sx={{ fontSize: '0.8rem' }}>
+                        {polygon.data.error}
+                      </Alert>
+                    ) : (
+                      <Stack spacing={1.5}>
+                        {/* Data Type Indicator */}
+                        <Chip
+                          label={polygon.data.isRangeData ? "Range Average Data" : "Point-in-Time Data"}
+                          size="small"
+                          sx={{
+                            bgcolor: polygon.data.isRangeData ? '#fff3e0' : '#e8f5e8',
+                            color: polygon.data.isRangeData ? '#e65100' : '#2e7d32',
+                            fontWeight: 600,
+                            fontSize: '0.7rem'
+                          }}
+                        />
+
+                        {/* Weather condition */}
+                        {polygon.data.weather_code !== null && polygon.data.weather_code !== undefined && getWeatherDescription && (
+                          <Box sx={{ 
+                            bgcolor: '#e3f2fd', 
+                            p: 1, 
+                            borderRadius: 1, 
+                            border: '1px solid #bbdefb',
+                            mb: 1
+                          }}>
+                            <Typography variant="body2" sx={{ 
+                              fontWeight: 600, 
+                              color: '#1565c0',
+                              textAlign: 'center',
+                              fontSize: '0.9rem'
+                            }}>
+                              {getWeatherDescription(polygon.data.weather_code)}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {/* Weather Parameters */}
+                        <Stack spacing={1}>
+                          {polygon.data.temperature_2m !== null && polygon.data.temperature_2m !== undefined && (
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                🌡️ Temperature:
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                fontWeight: 600, 
+                                color: polygon.data.temperature_2m > 20 ? '#d32f2f' : polygon.data.temperature_2m > 10 ? '#ed6c02' : '#1976d2'
+                              }}>
+                                {polygon.data.temperature_2m.toFixed(1)}°C
+                              </Typography>
+                            </Stack>
+                          )}
+
+                          {polygon.data.relative_humidity_2m !== null && polygon.data.relative_humidity_2m !== undefined && (
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                💧 Humidity:
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                fontWeight: 600, 
+                                color: polygon.data.relative_humidity_2m > 80 ? '#1976d2' : '#666'
+                              }}>
+                                {polygon.data.relative_humidity_2m.toFixed(1)}%
+                              </Typography>
+                            </Stack>
+                          )}
+
+                          {polygon.data.precipitation !== null && polygon.data.precipitation !== undefined && (
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                🌧️ Precipitation:
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                fontWeight: 600, 
+                                color: polygon.data.precipitation > 0 ? '#1976d2' : '#666'
+                              }}>
+                                {polygon.data.precipitation.toFixed(1)} mm
+                              </Typography>
+                            </Stack>
+                          )}
+
+                          {polygon.data.wind_speed_10m !== null && polygon.data.wind_speed_10m !== undefined && (
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                💨 Wind Speed:
+                              </Typography>
+                              <Typography variant="body2" sx={{ 
+                                fontWeight: 600, 
+                                color: polygon.data.wind_speed_10m > 20 ? '#d32f2f' : '#666'
+                              }}>
+                                {polygon.data.wind_speed_10m.toFixed(1)} km/h
+                              </Typography>
+                            </Stack>
+                          )}
+
+                          {polygon.data.wind_direction_10m !== null && polygon.data.wind_direction_10m !== undefined && (
+                            <Stack direction="row" justifyContent="space-between" alignItems="center">
+                              <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                                🧭 Wind Direction:
+                              </Typography>
+                              <Typography variant="body2" sx={{ fontWeight: 600, color: '#666' }}>
+                                {polygon.data.wind_direction_10m.toFixed(0)}°
+                              </Typography>
+                            </Stack>
+                          )}
+                        </Stack>
+
+                        {/* Range-specific information */}
+                        {polygon.data.isRangeData && polygon.data.rangeLength && (
+                          <Box sx={{ 
+                            bgcolor: '#f5f5f5', 
+                            p: 1, 
+                            borderRadius: 1, 
+                            border: '1px solid #e0e0e0' 
+                          }}>
+                            <Typography variant="caption" sx={{ 
+                              color: '#666', 
+                              fontWeight: 500,
+                              display: 'block',
+                              textAlign: 'center'
+                            }}>
+                              📊 Average over {polygon.data.rangeLength} hours
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {/* Last updated */}
+                        {polygon.lastUpdated && (
+                          <Typography variant="caption" sx={{ 
+                            color: '#999', 
+                            textAlign: 'center',
+                            display: 'block',
+                            fontSize: '0.7rem'
+                          }}>
+                            Last updated: {new Date(polygon.lastUpdated).toLocaleTimeString()}
+                          </Typography>
+                        )}
+
+                        {/* Delete button */}
+                        <Box sx={{ display: 'flex', justifyContent: 'center', mt: 1 }}>
+                          <Chip
+                            label="Delete Polygon"
+                            icon={<Delete />}
+                            onClick={() => onPolygonDelete(polygon.id)}
+                            size="small"
+                            sx={{
+                              bgcolor: '#ffebee',
+                              color: '#d32f2f',
+                              '&:hover': {
+                                bgcolor: '#ffcdd2'
+                              },
+                              cursor: 'pointer'
+                            }}
+                          />
+                        </Box>
+                      </Stack>
+                    )
+                  ) : (
+                    <Stack alignItems="center" spacing={1}>
+                      <Box sx={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: 1,
+                        p: 1,
+                        bgcolor: '#f5f5f5',
+                        borderRadius: 1
+                      }}>
+                        <Box
+                          sx={{
+                            width: 16,
+                            height: 16,
+                            border: '2px solid #1976d2',
+                            borderTop: '2px solid transparent',
+                            borderRadius: '50%',
+                            animation: 'spin 1s linear infinite',
+                            '@keyframes spin': {
+                              '0%': { transform: 'rotate(0deg)' },
+                              '100%': { transform: 'rotate(360deg)' }
+                            }
+                          }}
+                        />
+                        <Typography variant="body2" color="text.secondary">
+                          Loading weather data...
+                        </Typography>
+                      </Box>
+                      <Chip
+                        label="Delete Polygon"
+                        icon={<Delete />}
+                        onClick={() => onPolygonDelete(polygon.id)}
+                        size="small"
+                        sx={{
+                          bgcolor: '#ffebee',
+                          color: '#d32f2f',
+                          '&:hover': {
+                            bgcolor: '#ffcdd2'
+                          },
+                          cursor: 'pointer'
+                        }}
+                      />
+                    </Stack>
+                  )}
+                </Box>
+              </Popup>
             </Polygon>
           )
         })}
@@ -459,6 +682,47 @@ const MapComponent = ({ polygons, isDrawing, onPolygonCreated, onPolygonDelete }
             </Typography>
           </Stack>
         </Paper>
+      )}
+
+      {/* Global Loading Overlay */}
+      {isLoading && (
+        <Box sx={{
+          position: 'absolute',
+          top: 10,
+          left: 10,
+          zIndex: 1000,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+          bgcolor: 'rgba(255, 255, 255, 0.95)',
+          px: 2,
+          py: 1,
+          borderRadius: 2,
+          border: '1px solid #e0e0e0',
+          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+        }}>
+          <Box
+            sx={{
+              width: 20,
+              height: 20,
+              border: '3px solid #e3f2fd',
+              borderTop: '3px solid #1976d2',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' }
+              }
+            }}
+          />
+          <Typography variant="body2" sx={{ 
+            color: '#1976d2', 
+            fontWeight: 600,
+            fontSize: '0.9rem'
+          }}>
+            Fetching weather data...
+          </Typography>
+        </Box>
       )}
     </Box>
   )
